@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import javax.swing.Timer;
 
 import acm.graphics.GLabel;
+import acm.graphics.GObject;
 import acm.graphics.GOval;
 import acm.graphics.GRect;
 import acm.program.GraphicsProgram;
@@ -44,10 +45,12 @@ public class DodgeBall extends GraphicsProgram implements ActionListener {
     }
 
     public void actionPerformed(ActionEvent e) {
-        numTimes++;               // <-- increment each timer tick
-        moveAllBallsOnce();
+        numTimes++;
 
-        // Add enemies periodically
+        moveAllBallsOnce();
+        moveAllEnemiesOnce();
+        checkForCollisions();
+
         if (numTimes % 40 == 0 && enemies.size() < MAX_ENEMIES) {
             addAnEnemy();
         }
@@ -96,6 +99,45 @@ public class DodgeBall extends GraphicsProgram implements ActionListener {
         }
     }
 
+    private void moveAllEnemiesOnce() {
+        for (GRect enemy : enemies) {
+            enemy.move(0, rgen.nextInt(-2, 2));
+        }
+    }
+    
+    private void checkForCollisions() {
+        // For each ball, check several points around it
+        for (GOval ball : balls) {
+            removeEnemyIfHitAt(ball.getX() + SIZE,     ball.getY() + SIZE / 2); // right middle (front)
+            removeEnemyIfHitAt(ball.getX() + SIZE,     ball.getY() + 2);        // right top
+            removeEnemyIfHitAt(ball.getX() + SIZE,     ball.getY() + SIZE - 2); // right bottom
+
+            removeEnemyIfHitAt(ball.getX() + SIZE / 2, ball.getY() + 2);        // top middle
+            removeEnemyIfHitAt(ball.getX() + SIZE / 2, ball.getY() + SIZE - 2); // bottom middle
+
+            removeEnemyIfHitAt(ball.getX() + 2,        ball.getY() + SIZE / 2); // left middle
+            removeEnemyIfHitAt(ball.getX() + 2,        ball.getY() + 2);        // top-left corner
+            removeEnemyIfHitAt(ball.getX() + 2,        ball.getY() + SIZE - 2); // bottom-left corner
+            removeEnemyIfHitAt(ball.getX() + SIZE - 2, ball.getY() + 2);        // top-right corner
+            removeEnemyIfHitAt(ball.getX() + SIZE - 2, ball.getY() + SIZE - 2); // bottom-right corner
+        }
+    }
+    
+    private void removeEnemyIfHitAt(double x, double y) {
+        GObject obj = getElementAt(x, y);
+
+        if (obj instanceof GRect) {
+            GRect enemy = (GRect) obj;
+
+            // Only remove if it’s one of OUR enemies (not any random GRect)
+            if (enemies.contains(enemy)) {
+                remove(enemy);
+                enemies.remove(enemy);
+                text.setLabel("" + enemies.size());
+            }
+        }
+    }
+    
     public void init() {
         setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     }
